@@ -63,7 +63,8 @@
     "es6 proxy"
   ],
   "dependencies": {
-    "@nx-js/observer-util": "^4.1.1"
+    "@nx-js/observer-util": "^4.1.1",
+    "@nx-js/queue-util": "^1.1.1"
   },
   "peerDependencies": {
     "react": "*"

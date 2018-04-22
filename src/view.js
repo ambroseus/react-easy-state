@@ -1,5 +1,9 @@
 import { Component } from 'react'
 import { observe, unobserve } from '@nx-js/observer-util'
+import { Queue, priorities } from '@nx-js/queue-util'
+
+const updateQueue = new Queue(priorities.CRITICAL)
+const DUMMY_STATE = {}
 
 export default function view (Comp, { devtool: rawDevtool } = {}) {
   const isStatelessComp = !(Comp.prototype && Comp.prototype.isReactComponent)
@@ -15,10 +19,18 @@ export default function view (Comp, { devtool: rawDevtool } = {}) {
     constructor (props, context) {
       super(props, context)
 
-      // create a reactive render for the component
       // run a dummy setState to schedule a new reactive render, avoid forceUpdate
+      const updater = () => this.setState(DUMMY_STATE)
+      // batch setState calls to occur maximum once per synchronous call stacks
+      // except in test mode, where it is called immediately on changes
+      const scheduler = process.env.NODE_ENV === 'test' ? updater : {
+        add: () => updateQueue.add(updater),
+        delete: () => updateQueue.delete(updater)
+      }
+
+      // create a reactive render for the component
       this.render = observe(this.render, {
-        scheduler: () => this.setState({}),
+        scheduler,
         debugger: devtool,
         lazy: true
       })
